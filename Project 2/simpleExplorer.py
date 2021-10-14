@@ -60,11 +60,11 @@ class simpleExplorer:
         #check left - if y = 0... nothing will be to the left of it
         #if a wumpus, assign stench in tracker. if pit, assign breeze
         if y>0:
-            if cave[x-1,y] == 'W':
+            if cave[x,y-1] == 'W':
                 tracker[x,y].append("Stench")
                 print("A stench to the left!")
                 print(tracker)
-            elif cave[x-1,y] == 'P':
+            elif cave[x,y-1] == 'P':
                 tracker[x,y].append("Breeze")
                 print("A breeze to the left!")
                 print(tracker)
@@ -74,25 +74,25 @@ class simpleExplorer:
         #check right
         with suppress(IndexError):
             if y < caveDim[1]-1:
-                if cave[x+1, y] == 'W':
+                if cave[x, y+1] == 'W':
                     tracker[x,y].append("Stench")
                     print("A stench to the right!")
                     print(tracker)
-                elif cave[x+1, y] == 'P':
+                elif cave[x, y+1] == 'P':
                     tracker[x,y].append("Breeze")
                     print("A breeze to the right!")
                     print(tracker)
                 else:
-                    print("Whew.. nothing new to the left")
+                    print("Whew.. nothing new to the right")
 
         #check top
         with suppress(IndexError):
             if x > 0:
-                if cave[x, y+1] == 'W':
+                if cave[x-1, y] == 'W':
                     tracker[x,y].append("Stench")
                     print("A stench above!")
                     print(tracker)
-                elif cave[x, y+1] == 'P':
+                elif cave[x-1, y] == 'P':
                     tracker[x,y].append("Breeze")
                     print("A breeze above!")
                     print(tracker)
@@ -100,12 +100,12 @@ class simpleExplorer:
                     print("Whew.. nothing new above")
 
         #check bottom
-        if x < caveDim[0] - :
-            if cave[x,y-1] == 'W':
+        if x < caveDim[0]-1:
+            if cave[x+1,y] == 'W':
                 tracker[x,y].append("Stench")
                 print("A stench below")
                 print(tracker)
-            elif cave[x,y-1] == 'P':
+            elif cave[x+1,y] == 'P':
                 tracker[x,y].append("Breeze")
                 print("A breeze below")
                 print(tracker)
