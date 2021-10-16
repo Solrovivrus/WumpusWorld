@@ -50,7 +50,7 @@ class reasonedExplorer:
         while count == 0:
             row = random.randint(1, caveDim[0] - 1)
             col = random.randint(1, caveDim[1] - 1)
-            if caves[row, col] == '':
+            if caves[row, col] == ' ':
                 currentLocation[row, col] = 'E'
                 count += 1
             else:
@@ -97,9 +97,10 @@ class reasonedExplorer:
 
         # check right
         with suppress(IndexError):
-            if pickDirection == 2:
-                direction = [x, y + 1]
+
             if y < caveDim[1] - 1:
+                if pickDirection == 2:
+                    direction = [x, y + 1]
                 if cave[x, y + 1] == 'W':
                     tracker[x, y].append("Stench")
                     print("A stench to the right!")
@@ -142,29 +143,85 @@ class reasonedExplorer:
             else:
                 print("Whew.. nothing new below")
 
+        # if "stench" in tracker[x, y]:
+        rea.shootWumpus(cave, currentLocation, direction)
         rea.tryToEnter(cave, currentLocation, direction)
 
     @staticmethod
     def tryToEnter(cave, currentLocation, direction):
-        # caveDim = np.shape(cave)
         x = currentLocation[0]
         y = currentLocation[1]
 
         print(direction)
         # if y > 0 or y < caveDim[1] - 1 or x > 0 or x < caveDim[0] - 1:
         if cave[direction[0], direction[1]] == 'W':
+            # if explorer dies put F for Fatality
+            cave[direction[0], direction[1]] = 'F'
             print("You died from Wumpus")
         elif cave[direction[0], direction[1]] == 'P':
+            # if explorer dies put F for Fatality
+            cave[direction[0], direction[1]] = 'F'
             print("You died from a pit")
         elif cave[direction[0], direction[1]] == 'B':
             print("You cannot go that way")
         elif cave[direction[0], direction[1]] == 'G':
             print("You found the gold!")
+        elif cave[direction[0], direction[1]] == 'D':
+            print("There's a dead Wumpus here! Pat yourself of the back for killing it :)")
         else:
             cave[x, y] = 'S'
             cave[direction[0], direction[1]] = 'E'
 
         print(cave)
+
+
+
+    @staticmethod
+    def shootWumpus(cave, currentLocation, direction):
+        caveDim = np.shape(cave)
+        x = currentLocation[0]
+        y = currentLocation[1]
+
+        # assigning arrows based on number of wumpi in cave
+        wumpusCount = 0
+        for i in range(len(cave)):
+            for j in range(len(cave[0])):
+                if cave[i, j] == 'W':
+                    wumpusCount += 1
+        arrows = 1# wumpusCount
+
+        if arrows == 0:
+            print("You're out of arrows!")
+        # direction[1] > 0 and direction[1] < caveDim[1] - 1 and direction[0] > 0 and direction[0] < caveDim[0] - 1:
+        while 0 < direction[1] < caveDim[1] - 1 and 0 < direction[0] < caveDim[0] - 1:
+            if cave[direction[0], direction[1]] == 'W':
+                # change the wumpus into a dead wumpus
+                cave[direction[0], direction[1]] = 'D'
+                print("You heard a scream")
+                print(cave)
+                arrows -= 1
+                break
+            elif cave[direction[0], direction[1]] != '':
+                print("You hear your arrow break")
+                arrows -= 1
+                break
+            elif cave[direction[0], direction[1]] == '':
+                if x != direction[0]:
+                    if direction[0] < x:
+                        direction = [direction[0] - 1, direction[1]]
+                    else:
+                        direction = [direction[0] + 1, direction[1]]
+                elif y != direction[1]:
+                    if direction[0] < x:
+                        direction = [direction[0], direction[1] - 1]
+                    else:
+                        direction = [direction[0], direction[1] - 1]
+        # cave[direction[0], direction[1]] = 'A'
+            else:
+                print(cave)
+                print("You hear your arrow hit a wall")
+                arrows -= 1
+
 
 
 '''
