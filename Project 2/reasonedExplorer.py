@@ -17,6 +17,9 @@ class reasonedExplorer:
         caveDim = np.shape(caves)
         currentLocation = []
         count = 0
+        pickDirection = random.randint(1, 4)
+        gold = False
+        alive = True
 
         while count == 0:
             row = random.randint(1, caveDim[0] - 1)
@@ -28,151 +31,177 @@ class reasonedExplorer:
             else:
                 continue
 
-        print(caves)
+
         # initializing tracking cave
         tracker = np.full_like(caves, 0, dtype=object)
 
-        rea.track(caves, tracker, currentLocation)
+        rea.track(caves, tracker, currentLocation, pickDirection, gold, alive)
+       
+"""
+The track method mostly works but it does return a lot of Nones, I did plan to fix this
+but its midnight.  It still shows if the explorer died or got the gold there is just 
+nones after that we need to clean up.
 
-    """
-    So the place explorer needs to place the explorer in a random blank space on the board
-    my code up above does that but it doesnt fit with the track method yet and needs to be tweaked
-    the code commented out is my attempt on that but it doesnt work
-    it also replaces everything with 0 for some reason?
-    
+After this we just need to set up the priority logic and should be good to go.
+"""
     @staticmethod
-    def placeExplorer(caves):
-        rea = reasonedExplorer
-        caveDim = np.shape(caves)
-        currentLocation = caves
-        count = 0
-
-        while count == 0:
-            row = random.randint(1, caveDim[0] - 1)
-            col = random.randint(1, caveDim[1] - 1)
-            if caves[row, col] == ' ':
-                currentLocation[row, col] = 'E'
-                count += 1
-            else:
-                continue
-        # initializing tracking cave
-        tracker = np.full_like(caves, 0, dtype=object)
-
-        rea.track(caves, tracker, currentLocation)
-    """
-
-    @staticmethod
-    def track(cave, tracker, currentLocation):
+    def track(cave, tracker, currentLocation, pickDirection, gold, alive):
         rea = reasonedExplorer
         # getting dimensions
         caveDim = np.shape(cave)
         direction = []
-        pickDirection = random.randint(1, 4)
 
         # iterating through neighboring cells to see what's possible
         x = currentLocation[0]
         y = currentLocation[1]
-        # print(x, y)
-        # print(tracker)
+
         # setting a list to hold
-        obstacleList = []
+        obstacleList = ["Safe"]
         tracker[x, y] = obstacleList
-        # print(tracker)
 
         # check left - if y = 0... nothing will be to the left of it
         # if a wumpus, assign stench in tracker. if pit, assign breeze
-        if y > 0:
-            if pickDirection == 1:
-                direction = [x, y - 1]
-            if cave[x, y - 1] == 'W':
-                tracker[x, y].append("Stench")
-                print("A stench to the left!")
-                # print(tracker)
-            elif cave[x, y - 1] == 'P':
-                tracker[x, y].append("Breeze")
-                print("A breeze to the left!")
-                # print(tracker)
+        while not gold:
+            print(cave)
+            if not alive:
+                return print("Your journey ends here")
             else:
-                print("Whew.. nothing new to the left")
+                if y > 0:
+                    if pickDirection == 1:
+                        direction = [x, y - 1]
+                    if cave[x, y - 1] == 'W':
+                        tracker[x, y].append("Stench")
+                        print("A stench to the left!")
 
-        # check right
-        with suppress(IndexError):
+                    elif cave[x, y - 1] == 'P':
+                        tracker[x, y].append("Breeze")
+                        print("A breeze to the left!")
 
-            if y < caveDim[1] - 1:
-                if pickDirection == 2:
-                    direction = [x, y + 1]
-                if cave[x, y + 1] == 'W':
-                    tracker[x, y].append("Stench")
-                    print("A stench to the right!")
-                    # print(tracker)
-                elif cave[x, y + 1] == 'P':
-                    tracker[x, y].append("Breeze")
-                    print("A breeze to the right!")
-                    # print(tracker)
-                else:
-                    print("Whew.. nothing new to the right")
+                    else:
+                        print("Whew.. nothing new to the left")
 
-        # check top
-        with suppress(IndexError):
-            if x > 0:
-                if pickDirection == 3:
-                    direction = [x - 1, y]
-                if cave[x - 1, y] == 'W':
-                    tracker[x, y].append("Stench")
-                    print("A stench above!")
-                    # print(tracker)
-                elif cave[x - 1, y] == 'P':
-                    tracker[x, y].append("Breeze")
-                    print("A breeze above!")
-                    # print(tracker)
-                else:
-                    print("Whew.. nothing new above")
+                # check right
+                with suppress(IndexError):
 
-        # check bottom
-        if x < caveDim[0] - 1:
-            if pickDirection == 4:
-                direction = [x + 1, y]
-            if cave[x + 1, y] == 'W':
-                tracker[x, y].append("Stench")
-                print("A stench below")
-                # print(tracker)
-            elif cave[x + 1, y] == 'P':
-                tracker[x, y].append("Breeze")
-                print("A breeze below")
-                # print(tracker)
-            else:
-                print("Whew.. nothing new below")
+                    if y < caveDim[1] - 1:
+                        if pickDirection == 2:
+                            direction = [x, y + 1]
+                        if cave[x, y + 1] == 'W':
+                            tracker[x, y].append("Stench")
+                            print("A stench to the right!")
 
-        # if "stench" in tracker[x, y]:
-        rea.shootWumpus(cave, currentLocation, direction)
-        rea.tryToEnter(cave, currentLocation, direction)
+                        elif cave[x, y + 1] == 'P':
+                            tracker[x, y].append("Breeze")
+                            print("A breeze to the right!")
 
+                        else:
+                            print("Whew.. nothing new to the right")
+
+                # check top
+                with suppress(IndexError):
+                    if x > 0:
+                        if pickDirection == 3:
+                            direction = [x - 1, y]
+                        if cave[x - 1, y] == 'W':
+                            tracker[x, y].append("Stench")
+                            print("A stench above!")
+
+                        elif cave[x - 1, y] == 'P':
+                            tracker[x, y].append("Breeze")
+                            print("A breeze above!")
+
+                        else:
+                            print("Whew.. nothing new above")
+
+                # check bottom
+                if x < caveDim[0] - 1:
+                    if pickDirection == 4:
+                        direction = [x + 1, y]
+                    if cave[x + 1, y] == 'W':
+                        tracker[x, y].append("Stench")
+                        print("A stench below")
+
+                    elif cave[x + 1, y] == 'P':
+                        tracker[x, y].append("Breeze")
+                        print("A breeze below")
+
+                    else:
+                        print("Whew.. nothing new below")
+
+                print(tracker)
+                if "Stench" in tracker[x, y]:
+                    rea.shootWumpus(cave, currentLocation, direction)
+
+                return print(rea.tryToEnter(cave, currentLocation, direction, tracker))
+
+        return print("You found the gold at \n", cave)
+
+"""
+I mostly have the tracking feature working but there is an issue where if the explorer
+is next to a wall sometimes the tracker will glitch out and become empty leading to an 
+index error because the tracker is trying to register something that is out of bounds.  
+Im sure there is a way to fix this but its midnight and im tired.
+"""
     @staticmethod
-    def tryToEnter(cave, currentLocation, direction):
+    def tryToEnter(cave, currentLocation, direction, tracker):
+        pickDirection = random.randint(1, 4)
+        rea = reasonedExplorer
         x = currentLocation[0]
         y = currentLocation[1]
-
+        obstacleList = []
         print(direction)
+        tracker[direction[0], direction[1]] = obstacleList
+
+        # print(direction)
         # if y > 0 or y < caveDim[1] - 1 or x > 0 or x < caveDim[0] - 1:
         if cave[direction[0], direction[1]] == 'W':
             # if explorer dies put F for Fatality
+            cave[x, y] = 'S'
+            tracker[x, y].append("Safe")
+            gold = False
+            alive = False
             cave[direction[0], direction[1]] = 'F'
             print("You died from Wumpus")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
         elif cave[direction[0], direction[1]] == 'P':
             # if explorer dies put F for Fatality
+            cave[x, y] = 'S'
+            gold = False
+            alive = False
+            tracker[x, y].append("Safe")
             cave[direction[0], direction[1]] = 'F'
             print("You died from a pit")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
         elif cave[direction[0], direction[1]] == 'B':
+            tracker[direction[0], direction[1]].append("Blocked")
+            gold = False
+            alive = True
             print("You cannot go that way")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
         elif cave[direction[0], direction[1]] == 'G':
+            gold = True
+            alive = True
             print("You found the gold!")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
         elif cave[direction[0], direction[1]] == 'D':
-            print("There's a dead Wumpus here! Pat yourself of the back for killing it :)")
+            tracker[direction[0], direction[1]].append("Dead")
+            gold = False
+            alive = True
+            print("There's a dead Wumpus here!")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
         else:
             cave[x, y] = 'S'
+            if "Safe" not in tracker[x, y]:
+                tracker[x, y].append("Safe")
+            tracker[direction[0], direction[1]].append("Safe")
             cave[direction[0], direction[1]] = 'E'
-
-        print(cave)
+            gold = False
+            alive = True
+            x = direction[0]
+            y = direction[1]
+            currentLocation = [x, y]
+            print(pickDirection)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
 
 
 
@@ -188,7 +217,7 @@ class reasonedExplorer:
             for j in range(len(cave[0])):
                 if cave[i, j] == 'W':
                     wumpusCount += 1
-        arrows = 1# wumpusCount
+        arrows = wumpusCount
 
         if arrows == 0:
             print("You're out of arrows!")
@@ -216,91 +245,8 @@ class reasonedExplorer:
                         direction = [direction[0], direction[1] - 1]
                     else:
                         direction = [direction[0], direction[1] - 1]
-        # cave[direction[0], direction[1]] = 'A'
+
             else:
                 print(cave)
                 print("You hear your arrow hit a wall")
                 arrows -= 1
-
-
-
-'''
-        # check right
-        with suppress(IndexError):
-            if y < caveDim[1]-1:
-                if cave[x, y+1] == 'W':
-                    print("You died from Wumpus")
-                elif cave[x, y+1] == 'P':
-                    print("You died from a pit")
-                elif cave[x, y+1] == 'B':
-                    print("You cannot go that way")
-                elif cave[x, y+1] == 'G':
-                    print("You found the gold!")
-                else:
-                    cave[x, y+1] = 'E'
-
-        # check top
-        with suppress(IndexError):
-            if x > 0:
-                if cave[x-1, y] == 'W':
-                    print("You died from Wumpus")
-                elif cave[x-1, y] == 'P':
-                    print("You died from a pit")
-                elif cave[x-1, y] == 'B':
-                    print("You cannot go that way")
-                elif cave[x-1, y] == 'G':
-                    print("You found the gold!")
-                else:
-                    cave[x-1, y] = 'E'
-
-        # check bottom
-        if x < caveDim[0]-1:
-            if cave[x+1, y] == 'W':
-                print("You died from Wumpus")
-            elif cave[x+1, y] == 'P':
-                print("You died from a pit")
-            elif cave[x+1, y] == 'B':
-                print("You cannot go that way")
-            elif cave[x+1, y] == 'G':
-                print("You found the gold!")
-            else:
-                cave[x+1, y] = 'E'
-
-        print(cave)
-'''
-'''
-        my old code to check neighboring cells, it checks left and right well enough
-        but I couldn't figure out how to check up and down
-        but once we do that we can just make a copy of a blank array 
-        and use that to track areas that are next to danger/blocked.
-        Just gonna keep this here in case it comes handy
-        
-        # gotGold = False
-        rea = reasonedExplorer
-        f = rea.placeExplorer(caves)
-        print(f)
-        
-        for array in f:
-            for i in range(0, len(array)):
-                if array[i] == 'E':
-                    if array[i-1] or array[i+1] == 'P':
-                        print("you feel a breeze.")
-                    if array[i-1] or array[i+1] == 'W':
-                        print("you smell something awful")
-                    else:
-                        print("nothing to see here")
-        
-
-
-
-            for i in range(0, len(array)):
-                if array[i] == 'E':
-                    if array[i-len(array)] or array[i+len(array)] == 'P':
-                        print(array[i-len(array)])
-                        #print(array[i+len(array)])
-                        print("you feel a breeze.")
-                    if array[i-len(array)] or array[i+len(array)] == 'W':
-                        print("you smell something awful")
-                    else:
-                        print("nothing to see here")
-'''
