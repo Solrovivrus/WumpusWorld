@@ -1,4 +1,4 @@
-from os import stat
+from os import curdir, stat
 import numpy as np
 from contextlib import suppress
 import random
@@ -36,23 +36,46 @@ class simpleExplorer:
         #initializing tracking cave
         tracker = np.full_like(cave, 0, dtype=object)
 
-        #Process is: Update tracker of what is encountered. Then make move.
-        tracker = simple.checkNeighbors(cave, tracker, currentLocation)
 
-        next = simple.nextMove(tracker, currentLocation)
+        for i in range(100000000):
+            cave[currentLocation[0], currentLocation[1]] = 'E'
+            print(cave)
+            #Process is: Update tracker of what is encountered. Then make move.
+            tracker = simple.checkNeighbors(cave, tracker, currentLocation)
 
-        #will needs ability to end loop when implemented if return is string
-        if isinstance(next, str) == True:
-            print(next)
-        else:
-            currentLocation[0] = next[0]
-            currentLocation[1] = next[1]
-        print(currentLocation)
+            next = simple.nextMove(tracker, currentLocation)
 
+            #hopefully killing a wumpus...
+            for x in tracker[currentLocation[0], currentLocation[1]]:
+                if "Stench" in x:
+                    tracker, arrows, cave = simple.shootWumpus(cave, currentLocation, tracker, arrows)
 
+            #will needs ability to end loop when implemented if return is string
+            if isinstance(next, str) == True:
+                print(next)
+                return
+            elif cave[next[0], next[1]] == 'DW':
+                print("The cell is blocked by a dead Wumpus!")
+                continue
+            # removes explorers location in cave and updates currentlocation with what was chosen
+            else:
+                cave[currentLocation[0], currentLocation[1]] = ''
+                currentLocation[0] = next[0]
+                currentLocation[1] = next[1]
 
+            print("Our explorer moves to: " + str(currentLocation) + " and...")
+            if cave[currentLocation[0], currentLocation[1]] == 'P':
+                print("Falls into a Pit!")
+                return
+            elif cave[currentLocation[0], currentLocation[1]] == 'W':
+                print("Is eaten by a Wumpus!!")
+                return
+            elif cave[currentLocation[0], currentLocation[1]] == 'G':
+                print("The explorer has found the gold!")
+                return
+            else:
+                print("The explorer safely moves to the next cell :) ")
 
-        
 
     # --------------------------------------------------------------------------------------------
     # The checkCells method checks through neighboring cells for possibile moves. Assigns a list to
@@ -66,12 +89,9 @@ class simpleExplorer:
         #iterating through neighboring cells to see what's possible
         x = currentLocation[0]
         y = currentLocation[1]
-        print(x, y)
-        print(tracker)
         #setting a list to hold 
         obstacleList = []
         tracker[x,y] = obstacleList
-        print(tracker)
 
         #check left - if y = 0... nothing will be to the left of it
         #if a wumpus, assign stench in tracker. if pit, assign breeze
@@ -79,11 +99,9 @@ class simpleExplorer:
             if cave[x,y-1] == 'W':
                 tracker[x,y].append("Stench")
                 print("A stench to the left!")
-                print(tracker)
             elif cave[x,y-1] == 'P':
                 tracker[x,y].append("Breeze")
                 print("A breeze to the left!")
-                print(tracker)
             else:
                 print("Whew.. nothing new to the left")
 
@@ -93,11 +111,9 @@ class simpleExplorer:
                 if cave[x, y+1] == 'W':
                     tracker[x,y].append("Stench")
                     print("A stench to the right!")
-                    print(tracker)
                 elif cave[x, y+1] == 'P':
                     tracker[x,y].append("Breeze")
                     print("A breeze to the right!")
-                    print(tracker)
                 else:
                     print("Whew.. nothing new to the right")
 
@@ -107,11 +123,9 @@ class simpleExplorer:
                 if cave[x-1, y] == 'W':
                     tracker[x,y].append("Stench")
                     print("A stench above!")
-                    print(tracker)
                 elif cave[x-1, y] == 'P':
                     tracker[x,y].append("Breeze")
                     print("A breeze above!")
-                    print(tracker)
                 else:
                     print("Whew.. nothing new above")
 
@@ -120,11 +134,9 @@ class simpleExplorer:
             if cave[x+1,y] == 'W':
                 tracker[x,y].append("Stench")
                 print("A stench below")
-                print(tracker)
             elif cave[x+1,y] == 'P':
                 tracker[x,y].append("Breeze")
                 print("A breeze below")
-                print(tracker)
             else:
                 print("Whew.. nothing new below")
         
@@ -147,7 +159,9 @@ class simpleExplorer:
 
         # sends tracker and current location to find what moves are available
         moves = simple.legalMove(tracker, currentLocation)
-
+        print(moves)
+        print(len(moves))
+     
         # if the returned moves list is empty, not moves left so quit, this should only happen
         # if player is initially palced in a cage
         if len(moves) == 0:
@@ -172,7 +186,7 @@ class simpleExplorer:
                 next.append(down[1])
             
             else:
-                randomChoice = random.randint(0, len(moves)-1)
+                randomChoice = random.randint(0, len(moves)+1)
                 next.append(moves[randomChoice][0])
                 next.append(moves[randomChoice][1])
             
@@ -186,13 +200,10 @@ class simpleExplorer:
                 return next
             else: 
                 randomChoice = random.randint(0, len(moves)-1)
+                print("Move choice =" + str(randomChoice))
                 next.append(moves[randomChoice][0])
                 next.append(moves[randomChoice][1])
                 return next
-
-        
-        
-
 
             
     # the legalMove function checks through the neighbors to see what exists and adds to 
@@ -215,6 +226,65 @@ class simpleExplorer:
             legalList.append([x+1, y])
         
         return legalList
+        
+    @staticmethod
+    def shootWumpus(cave, currentLocation, tracker, arrowCount):
+        simple = simpleExplorer
+        caveDim= np.shape(cave)
+        directionList = simple.legalMove(tracker, currentLocation)
+        arrowDirection = []
+
+        for lst in directionList:
+            randomDirection = random.randint(0, len(directionList)-1)
+            arrowDirection.append(directionList[randomDirection][0])
+            arrowDirection.append(directionList[randomDirection][1])
+            break
+
+        while arrowCount > 0:
+            if cave[arrowDirection[0], arrowDirection[1]] == 'W':
+                print("The arrow hit a wumpus ")
+                cave[arrowDirection[0], arrowDirection[1]] = 'DW'
+                print("The explorer hears a terrible scream! A wumpus is dead!")
+                for x in tracker[currentLocation[0], currentLocation[1]]:
+                    if "Stench" in x:
+                        tracker[currentLocation[0], currentLocation[1]].remove(x)
+                        arrowCount -= 1
+                        return tracker, arrowCount, cave
+            
+            elif cave[arrowDirection[0], arrowDirection[1]] == 'DW':
+                print("The explorer hears a mushy thud... I hit a dead Wumpus!")
+                arrowCount -= 1
+                return tracker, arrowCount, cave
+
+            # indicate that arrow traveling up and continues
+            elif currentLocation[0] > arrowDirection[0] and arrowDirection[0] > 0:
+                arrowDirection[0] -= 1
+                print("The arrow travles upwards and is in cell " + str(arrowDirection)) 
+            # indicates that arrow traveling down and continues
+            elif currentLocation[0] < arrowDirection[0] and arrowDirection[0] < caveDim[0]-1:
+                arrowDirection[0] += 1 
+                print("The arrow travles downwards and is in cell " + str(arrowDirection))
+            # indicates that arrow traveling left and continues
+            elif currentLocation[1] > arrowDirection[1] and arrowDirection[1] > 0:
+                arrowDirection[1] -= 1 
+                print("The arrow travels to the left and is in cell " + str(arrowDirection))
+            # indicates that arrow traveling right and continues
+            elif currentLocation[1] < arrowDirection[1] and arrowDirection[1] < caveDim[1]-1:
+                arrowDirection[1] += 1
+                print("The arrow travels to the right and is in cell " + str(arrowDirection))
+            else:
+                print("The explorer hears a thud as the arrow collides with a wall. Better aim next time!")
+                return tracker, arrowCount, cave
+
+            
+
+
+
+
+
+
+
+        
         
         
 
