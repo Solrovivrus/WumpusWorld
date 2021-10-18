@@ -3,6 +3,12 @@ import numpy as np
 from contextlib import suppress
 import random
 
+import sys
+from colorama import init
+init(strip=not sys.stdout.isatty()) 
+from termcolor import cprint 
+from pyfiglet import figlet_format
+
 class simpleExplorer:
 
     # --------------------------------------------------------------------------------------------
@@ -19,7 +25,7 @@ class simpleExplorer:
     def placeExplorer(cave):
         simple = simpleExplorer
         # initializing starting cell count
-        numCells = 0
+        numMoves = 0
 
         # placing the explorer in its starting location. Initializing current location tracker
         cave[0,0] = 'E'
@@ -44,7 +50,7 @@ class simpleExplorer:
             tracker = simple.checkNeighbors(cave, tracker, currentLocation)
 
             next = simple.nextMove(tracker, currentLocation)
-
+            numMoves +=1
             #hopefully killing a wumpus...
             for x in tracker[currentLocation[0], currentLocation[1]]:
                 if "Stench" in x:
@@ -56,6 +62,11 @@ class simpleExplorer:
                 return
             elif cave[next[0], next[1]] == 'DW':
                 print("The cell is blocked by a dead Wumpus!")
+                tracker[next[0], next[1]] = 'DW'
+                continue
+            elif cave[next[0], next[1]] == 'B':
+                print("The cell is blocked by an obstacle!")
+                tracker[next[0], next[1]] = 'B'
                 continue
             # removes explorers location in cave and updates currentlocation with what was chosen
             else:
@@ -65,13 +76,17 @@ class simpleExplorer:
 
             print("Our explorer moves to: " + str(currentLocation) + " and...")
             if cave[currentLocation[0], currentLocation[1]] == 'P':
-                print("Falls into a Pit!")
+                cprint(figlet_format('The Explorer Fell in a Pit!', font='letters'),
+       'white', 'on_grey', attrs=['bold', 'blink'])
                 return
             elif cave[currentLocation[0], currentLocation[1]] == 'W':
-                print("Is eaten by a Wumpus!!")
+                cprint(figlet_format('The Explorer was Killed by a Wumpus!!', font='letters'),
+       'white', 'on_red', attrs=['bold', 'blink'])
                 return
             elif cave[currentLocation[0], currentLocation[1]] == 'G':
-                print("The explorer has found the gold!")
+                cprint(figlet_format('GOLD FOUND', font='letters'),
+       'white', 'on_yellow', attrs=['bold', 'blink'])
+                print("The explorer has found the gold in " + str(numMoves) + " moves")
                 return
             else:
                 print("The explorer safely moves to the next cell :) ")
@@ -159,15 +174,13 @@ class simpleExplorer:
 
         # sends tracker and current location to find what moves are available
         moves = simple.legalMove(tracker, currentLocation)
-        print(moves)
-        print(len(moves))
      
         # if the returned moves list is empty, not moves left so quit, this should only happen
         # if player is initially palced in a cage
         if len(moves) == 0:
             return "Game Over"
 
-        # check first to see if one of the cells are unexplored.. if so , make that move
+        #if any move is available
         if len(moves) == 4:
             if tracker[left[0],left[1]] == 0:
                 next.append(left[0])
@@ -186,24 +199,18 @@ class simpleExplorer:
                 next.append(down[1])
             
             else:
-                randomChoice = random.randint(0, len(moves)+1)
+                randomChoice = random.randint(0, len(moves)-1)
                 next.append(moves[randomChoice][0])
                 next.append(moves[randomChoice][1])
             
             return next
 
         # if list isn't full, pick one that's not been explored first
-        for lst in moves:
-            if tracker[lst[0], lst[1]] == 0:
-                next.append(lst[0])
-                next.append(lst[1])
-                return next
-            else: 
-                randomChoice = random.randint(0, len(moves)-1)
-                print("Move choice =" + str(randomChoice))
-                next.append(moves[randomChoice][0])
-                next.append(moves[randomChoice][1])
-                return next
+        randomChoice = random.randint(0, len(moves)-1)
+        print("Move choice =" + str(randomChoice))
+        next.append(moves[randomChoice][0])
+        next.append(moves[randomChoice][1])
+        return next
 
             
     # the legalMove function checks through the neighbors to see what exists and adds to 
