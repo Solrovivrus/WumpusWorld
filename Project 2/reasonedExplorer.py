@@ -1,298 +1,246 @@
-from os import curdir, stat
-import numpy as np
-from contextlib import suppress
 import random
+from contextlib import suppress
 
-import sys
-from colorama import init
-init(strip=not sys.stdout.isatty()) 
-from termcolor import cprint 
-from pyfiglet import figlet_format
+import numpy as np
 
-class simpleExplorer:
 
-    # --------------------------------------------------------------------------------------------
-    # The caveSelection method iterates through all 10 caves generated and sends them to be solved 
-    # within the simpleExplorer class
-    @staticmethod
-    def caveSelection(caves):
-        simple = simpleExplorer
-        for cave in caves:
-            currentCave = simple.placeExplorer(cave)
-
+class reasonedExplorer:
+    """
+    This method will take the cave array and use random uniform distribution to
+    pick a random place to start the explorer, and also count the wumpi
+    to give the explorer the right amount of arrows
+    """
 
     @staticmethod
-    def placeExplorer(cave):
-        simple = simpleExplorer
-        # initializing starting cell count
-        numMoves = 0
+    def placeExplorer(caves):
+        rea = reasonedExplorer
+        caveDim = np.shape(caves)
+        currentLocation = []
+        count = 0
+        pickDirection = random.randint(1, 4)
+        gold = False
+        alive = True
 
-        # placing the explorer in its starting location. Initializing current location tracker
-        cave[0,0] = 'E'
-        currentLocation = [0,0]
-        #assigning arrows based on number of wumpi in cave
+        while count == 0:
+            row = random.randint(1, caveDim[0] - 1)
+            col = random.randint(1, caveDim[1] - 1)
+            if caves[row, col] == '':
+                caves[row, col] = 'E'
+                currentLocation = [row, col]
+                count += 1
+            else:
+                continue
+
+
+        # initializing tracking cave
+        tracker = np.full_like(caves, 0, dtype=object)
+
+        rea.track(caves, tracker, currentLocation, pickDirection, gold, alive)
+
+    @staticmethod
+    def track(cave, tracker, currentLocation, pickDirection, gold, alive):
+        rea = reasonedExplorer
+        # getting dimensions
+        caveDim = np.shape(cave)
+        direction = []
+
+        # iterating through neighboring cells to see what's possible
+        x = currentLocation[0]
+        y = currentLocation[1]
+
+        # setting a list to hold
+        obstacleList = ["Safe"]
+        tracker[x, y] = obstacleList
+
+        # check left - if y = 0... nothing will be to the left of it
+        # if a wumpus, assign stench in tracker. if pit, assign breeze
+        while not gold:
+            print(cave)
+            if not alive:
+                return print("Your journey ends here")
+            else:
+                if y > 0:
+                    if pickDirection == 1:
+                        direction = [x, y - 1]
+                    if cave[x, y - 1] == 'W':
+                        tracker[x, y].append("Stench")
+                        print("A stench to the left!")
+
+                    elif cave[x, y - 1] == 'P':
+                        tracker[x, y].append("Breeze")
+                        print("A breeze to the left!")
+
+                    else:
+                        print("Whew.. nothing new to the left")
+
+                # check right
+                with suppress(IndexError):
+
+                    if y < caveDim[1] - 1:
+                        if pickDirection == 2:
+                            direction = [x, y + 1]
+                        if cave[x, y + 1] == 'W':
+                            tracker[x, y].append("Stench")
+                            print("A stench to the right!")
+
+                        elif cave[x, y + 1] == 'P':
+                            tracker[x, y].append("Breeze")
+                            print("A breeze to the right!")
+
+                        else:
+                            print("Whew.. nothing new to the right")
+
+                # check top
+                with suppress(IndexError):
+                    if x > 0:
+                        if pickDirection == 3:
+                            direction = [x - 1, y]
+                        if cave[x - 1, y] == 'W':
+                            tracker[x, y].append("Stench")
+                            print("A stench above!")
+
+                        elif cave[x - 1, y] == 'P':
+                            tracker[x, y].append("Breeze")
+                            print("A breeze above!")
+
+                        else:
+                            print("Whew.. nothing new above")
+
+                # check bottom
+                if x < caveDim[0] - 1:
+                    if pickDirection == 4:
+                        direction = [x + 1, y]
+                    if cave[x + 1, y] == 'W':
+                        tracker[x, y].append("Stench")
+                        print("A stench below")
+
+                    elif cave[x + 1, y] == 'P':
+                        tracker[x, y].append("Breeze")
+                        print("A breeze below")
+
+                    else:
+                        print("Whew.. nothing new below")
+
+                print(tracker)
+                if "Stench" in tracker[x, y]:
+                    rea.shootWumpus(cave, currentLocation, direction)
+
+                return print(rea.tryToEnter(cave, currentLocation, direction, tracker))
+
+        return print("You found the gold at \n", cave)
+
+
+    @staticmethod
+    def tryToEnter(cave, currentLocation, direction, tracker):
+        pickDirection = random.randint(1, 4)
+        rea = reasonedExplorer
+        x = currentLocation[0]
+        y = currentLocation[1]
+        obstacleList = []
+
+
+        # print(direction)
+        # if y > 0 or y < caveDim[1] - 1 or x > 0 or x < caveDim[0] - 1:
+        if cave[direction[0], direction[1]] == 'W':
+            # if explorer dies put F for Fatality
+            tracker[direction[0], direction[1]] = obstacleList
+            cave[x, y] = 'S'
+            tracker[x, y].append("Safe")
+            gold = False
+            alive = False
+            cave[direction[0], direction[1]] = 'F'
+            print("You died from Wumpus")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+        elif cave[direction[0], direction[1]] == 'P':
+            tracker[direction[0], direction[1]] = obstacleList
+            # if explorer dies put F for Fatality
+            cave[x, y] = 'S'
+            gold = False
+            alive = False
+            tracker[x, y].append("Safe")
+            cave[direction[0], direction[1]] = 'F'
+            print("You died from a pit")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+        elif cave[direction[0], direction[1]] == 'B':
+            tracker[direction[0], direction[1]] = obstacleList
+            tracker[direction[0], direction[1]].append("Blocked")
+            gold = False
+            alive = True
+            print("You cannot go that way")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+        elif cave[direction[0], direction[1]] == 'G':
+            tracker[direction[0], direction[1]] = obstacleList
+            gold = True
+            alive = True
+            print("You found the gold!")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+        elif cave[direction[0], direction[1]] == 'D':
+            tracker[direction[0], direction[1]] = obstacleList
+            tracker[direction[0], direction[1]].append("Dead")
+            gold = False
+            alive = True
+            print("There's a dead Wumpus here!")
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+        else:
+            tracker[direction[0], direction[1]] = obstacleList
+            cave[x, y] = 'S'
+            if "Safe" not in tracker[x, y]:
+                tracker[x, y].append("Safe")
+            tracker[direction[0], direction[1]].append("Safe")
+            cave[direction[0], direction[1]] = 'E'
+            gold = False
+            alive = True
+            x = direction[0]
+            y = direction[1]
+            currentLocation = [x, y]
+            print(pickDirection)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+
+
+
+    @staticmethod
+    def shootWumpus(cave, currentLocation, direction):
+        caveDim = np.shape(cave)
+        x = currentLocation[0]
+        y = currentLocation[1]
+
+        # assigning arrows based on number of wumpi in cave
         wumpusCount = 0
         for i in range(len(cave)):
             for j in range(len(cave[0])):
-                if cave[i,j] == 'W':
+                if cave[i, j] == 'W':
                     wumpusCount += 1
         arrows = wumpusCount
 
-        #initializing tracking cave
-        tracker = np.full_like(cave, 0, dtype=object)
+        if arrows == 0:
+            print("You're out of arrows!")
+        else:
+            # direction[1] > 0 and direction[1] < caveDim[1] - 1 and direction[0] > 0 and direction[0] < caveDim[0] - 1:
+            while 0 < direction[1] < caveDim[1] - 1 and 0 < direction[0] < caveDim[0] - 1:
+                if cave[direction[0], direction[1]] == 'W':
+                    # change the wumpus into a dead wumpus
+                    cave[direction[0], direction[1]] = 'D'
+                    print("You heard a scream")
+                    print(cave)
+                    arrows -= 1
+                    break
+                elif cave[direction[0], direction[1]] != '':
+                    print("You hear your arrow break")
+                    arrows -= 1
+                    break
+                elif cave[direction[0], direction[1]] == '':
+                    if x != direction[0]:
+                        if direction[0] < x:
+                            direction = [direction[0] - 1, direction[1]]
+                        else:
+                            direction = [direction[0] + 1, direction[1]]
+                    elif y != direction[1]:
+                        if direction[0] < x:
+                            direction = [direction[0], direction[1] - 1]
+                        else:
+                            direction = [direction[0], direction[1] - 1]
 
-
-        for i in range(100000000):
-            cave[currentLocation[0], currentLocation[1]] = 'E'
-            print(cave)
-            #Process is: Update tracker of what is encountered. Then make move.
-            tracker = simple.checkNeighbors(cave, tracker, currentLocation)
-
-            next = simple.nextMove(tracker, currentLocation)
-            numMoves +=1
-            #hopefully killing a wumpus...
-            for x in tracker[currentLocation[0], currentLocation[1]]:
-                if "Stench" in x:
-                    tracker, arrows, cave = simple.shootWumpus(cave, currentLocation, tracker, arrows)
-
-            #will needs ability to end loop when implemented if return is string
-            if isinstance(next, str) == True:
-                print(next)
-                return
-            elif cave[next[0], next[1]] == 'DW':
-                print("The cell is blocked by a dead Wumpus!")
-                tracker[next[0], next[1]] = 'DW'
-                continue
-            elif cave[next[0], next[1]] == 'B':
-                print("The cell is blocked by an obstacle!")
-                tracker[next[0], next[1]] = 'B'
-                continue
-            # removes explorers location in cave and updates currentlocation with what was chosen
-            else:
-                cave[currentLocation[0], currentLocation[1]] = ''
-                currentLocation[0] = next[0]
-                currentLocation[1] = next[1]
-
-            print("Our explorer moves to: " + str(currentLocation) + " and...")
-            if cave[currentLocation[0], currentLocation[1]] == 'P':
-                cprint(figlet_format('The Explorer Fell in a Pit!', font='letters'),
-       'white', 'on_grey', attrs=['bold', 'blink'])
-                print("The explorer fell into a pit after " + str(numMoves) + " moves")
-                return
-            elif cave[currentLocation[0], currentLocation[1]] == 'W':
-                cprint(figlet_format('The Explorer was Killed by a Wumpus!!', font='letters'),
-       'white', 'on_red', attrs=['bold', 'blink'])
-                print("The explorer has been eaten by a wumpus after " + str(numMoves) + " moves")
-                return
-            elif cave[currentLocation[0], currentLocation[1]] == 'G':
-                cprint(figlet_format('GOLD FOUND', font='letters'),
-       'white', 'on_yellow', attrs=['bold', 'blink'])
-                print("The explorer has found the gold in " + str(numMoves) + " moves")
-                return
-            else:
-                print("The explorer safely moves to the next cell :) ")
-
-
-    # --------------------------------------------------------------------------------------------
-    # The checkCells method checks through neighboring cells for possibile moves. Assigns a list to
-    # the tracker matrix which holds stench/breeze values
-    @staticmethod
-    def checkNeighbors(cave, tracker, currentLocation):
-        simple = simpleExplorer
-        #getting dimensions
-        caveDim = np.shape(cave)
-
-        #iterating through neighboring cells to see what's possible
-        x = currentLocation[0]
-        y = currentLocation[1]
-        #setting a list to hold 
-        obstacleList = []
-        tracker[x,y] = obstacleList
-
-        #check left - if y = 0... nothing will be to the left of it
-        #if a wumpus, assign stench in tracker. if pit, assign breeze
-        if y>0:
-            if cave[x,y-1] == 'W':
-                tracker[x,y].append("Stench")
-                #print("A stench to the left!")
-            elif cave[x,y-1] == 'P':
-                tracker[x,y].append("Breeze")
-                #print("A breeze to the left!")
-
-        #check right
-        with suppress(IndexError):
-            if y < caveDim[1]-1:
-                if cave[x, y+1] == 'W':
-                    tracker[x,y].append("Stench")
-                    #print("A stench to the right!")
-                elif cave[x, y+1] == 'P':
-                    tracker[x,y].append("Breeze")
-                    #print("A breeze to the right!")
-
-        #check top
-        with suppress(IndexError):
-            if x > 0:
-                if cave[x-1, y] == 'W':
-                    tracker[x,y].append("Stench")
-                    #print("A stench above!")
-                elif cave[x-1, y] == 'P':
-                    tracker[x,y].append("Breeze")
-                    #print("A breeze above!")
-
-        #check bottom
-        if x < caveDim[0]-1:
-            if cave[x+1,y] == 'W':
-                tracker[x,y].append("Stench")
-                #print("A stench below")
-            elif cave[x+1,y] == 'P':
-                tracker[x,y].append("Breeze")
-                #print("A breeze below")
-
-        
-        return tracker
-
-
-    @staticmethod
-    def nextMove(tracker, currentLocation):
-        simple = simpleExplorer
-        #getting current coordinates
-        x = currentLocation[0]
-        y = currentLocation[1]
-        #initializing list to store next move
-        next = []
-        #setting up possibilities
-        left = [x,y-1]
-        right = [x,y+1]
-        up = [x-1, y]
-        down = [x+1,y]
-
-        # sends tracker and current location to find what moves are available
-        moves = simple.legalMove(tracker, currentLocation)
-     
-        # if the returned moves list is empty, not moves left so quit, this should only happen
-        # if player is initially palced in a cage
-        if len(moves) == 0:
-            return "Game Over"
-
-        #if any move is available
-        if len(moves) == 4:
-            if tracker[left[0],left[1]] == 0:
-                next.append(left[0])
-                next.append(left[1])
-            
-            elif tracker[right[0],right[1]] == 0:
-                next.append(right[0])
-                next.append(right[1])
-            
-            elif tracker[up[0],up[1]] == 0:
-                next.append(up[0])
-                next.append(up[1])
-            
-            elif tracker[down[0],down[1]] == 0:
-                next.append(down[0])
-                next.append(down[1])
-            
-            else:
-                randomChoice = random.randint(0, len(moves)-1)
-                next.append(moves[randomChoice][0])
-                next.append(moves[randomChoice][1])
-            
-            return next
-
-        # if list isn't full, pick one that's not been explored first
-        randomChoice = random.randint(0, len(moves)-1)
-        print("Move choice =" + str(randomChoice))
-        next.append(moves[randomChoice][0])
-        next.append(moves[randomChoice][1])
-        return next
-
-            
-    # the legalMove function checks through the neighbors to see what exists and adds to 
-    # legalList with what directions would work
-    @staticmethod
-    def legalMove(tracker, currentLocation):
-        simple = simpleExplorer
-        legalList = []
-        x = currentLocation[0]
-        y = currentLocation[1]
-        caveDim = np.shape(tracker)
-        #adding list of possible coordinates
-        if y > 0:
-            legalList.append([x,y-1])
-        if y < caveDim[1]-1:
-            legalList.append([x,y+1])
-        if x > 0:
-            legalList.append([x-1,y])
-        if x < caveDim[0]-1:
-            legalList.append([x+1, y])
-        
-        return legalList
-        
-    @staticmethod
-    def shootWumpus(cave, currentLocation, tracker, arrowCount):
-        simple = simpleExplorer
-        caveDim= np.shape(cave)
-        directionList = simple.legalMove(tracker, currentLocation)
-        arrowDirection = []
-
-        for lst in directionList:
-            randomDirection = random.randint(0, len(directionList)-1)
-            arrowDirection.append(directionList[randomDirection][0])
-            arrowDirection.append(directionList[randomDirection][1])
-            break
-
-        while arrowCount > 0:
-            if cave[arrowDirection[0], arrowDirection[1]] == 'W':
-                print("The arrow hit a wumpus ")
-                cave[arrowDirection[0], arrowDirection[1]] = 'DW'
-                print("The explorer hears a terrible scream! A wumpus is dead!")
-                for x in tracker[currentLocation[0], currentLocation[1]]:
-                    if "Stench" in x:
-                        tracker[currentLocation[0], currentLocation[1]].remove(x)
-                        arrowCount -= 1
-                        return tracker, arrowCount, cave
-            
-            elif cave[arrowDirection[0], arrowDirection[1]] == 'DW':
-                print("The explorer hears a mushy thud... I hit a dead Wumpus!")
-                arrowCount -= 1
-                return tracker, arrowCount, cave
-
-            # indicate that arrow traveling up and continues
-            elif currentLocation[0] > arrowDirection[0] and arrowDirection[0] > 0:
-                arrowDirection[0] -= 1
-                print("The arrow travles upwards and is in cell " + str(arrowDirection)) 
-            # indicates that arrow traveling down and continues
-            elif currentLocation[0] < arrowDirection[0] and arrowDirection[0] < caveDim[0]-1:
-                arrowDirection[0] += 1 
-                print("The arrow travles downwards and is in cell " + str(arrowDirection))
-            # indicates that arrow traveling left and continues
-            elif currentLocation[1] > arrowDirection[1] and arrowDirection[1] > 0:
-                arrowDirection[1] -= 1 
-                print("The arrow travels to the left and is in cell " + str(arrowDirection))
-            # indicates that arrow traveling right and continues
-            elif currentLocation[1] < arrowDirection[1] and arrowDirection[1] < caveDim[1]-1:
-                arrowDirection[1] += 1
-                print("The arrow travels to the right and is in cell " + str(arrowDirection))
-            else:
-                print("The explorer hears a thud as the arrow collides with a wall. Better aim next time!")
-                return tracker, arrowCount, cave
-
-            
-
-
-
-
-
-
-
-        
-        
-        
-
-
-
-            
-
-
-
-        
+                else:
+                    print(cave)
+                    print("You hear your arrow hit a wall")
+                    arrows -= 1
