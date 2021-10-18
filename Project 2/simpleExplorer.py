@@ -30,7 +30,6 @@ class simpleExplorer:
         # placing the explorer in its starting location. Initializing current location tracker
         cave[0,0] = 'E'
         currentLocation = [0,0]
-        print(cave)
         #assigning arrows based on number of wumpi in cave
         wumpusCount = 0
         for i in range(len(cave)):
@@ -78,10 +77,12 @@ class simpleExplorer:
             if cave[currentLocation[0], currentLocation[1]] == 'P':
                 cprint(figlet_format('The Explorer Fell in a Pit!', font='letters'),
        'white', 'on_grey', attrs=['bold', 'blink'])
+                print("The explorer fell into a pit after " + str(numMoves) + " moves")
                 return
             elif cave[currentLocation[0], currentLocation[1]] == 'W':
                 cprint(figlet_format('The Explorer was Killed by a Wumpus!!', font='letters'),
        'white', 'on_red', attrs=['bold', 'blink'])
+                print("The explorer has been eaten by a wumpus after " + str(numMoves) + " moves")
                 return
             elif cave[currentLocation[0], currentLocation[1]] == 'G':
                 cprint(figlet_format('GOLD FOUND', font='letters'),
@@ -113,47 +114,40 @@ class simpleExplorer:
         if y>0:
             if cave[x,y-1] == 'W':
                 tracker[x,y].append("Stench")
-                print("A stench to the left!")
+                #print("A stench to the left!")
             elif cave[x,y-1] == 'P':
                 tracker[x,y].append("Breeze")
-                print("A breeze to the left!")
-            else:
-                print("Whew.. nothing new to the left")
+                #print("A breeze to the left!")
 
         #check right
         with suppress(IndexError):
             if y < caveDim[1]-1:
                 if cave[x, y+1] == 'W':
                     tracker[x,y].append("Stench")
-                    print("A stench to the right!")
+                    #print("A stench to the right!")
                 elif cave[x, y+1] == 'P':
                     tracker[x,y].append("Breeze")
-                    print("A breeze to the right!")
-                else:
-                    print("Whew.. nothing new to the right")
+                    #print("A breeze to the right!")
 
         #check top
         with suppress(IndexError):
             if x > 0:
                 if cave[x-1, y] == 'W':
                     tracker[x,y].append("Stench")
-                    print("A stench above!")
+                    #print("A stench above!")
                 elif cave[x-1, y] == 'P':
                     tracker[x,y].append("Breeze")
-                    print("A breeze above!")
-                else:
-                    print("Whew.. nothing new above")
+                    #print("A breeze above!")
 
         #check bottom
         if x < caveDim[0]-1:
             if cave[x+1,y] == 'W':
                 tracker[x,y].append("Stench")
-                print("A stench below")
+                #print("A stench below")
             elif cave[x+1,y] == 'P':
                 tracker[x,y].append("Breeze")
-                print("A breeze below")
-            else:
-                print("Whew.. nothing new below")
+                #print("A breeze below")
+
         
         return tracker
 
