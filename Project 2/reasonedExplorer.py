@@ -147,6 +147,7 @@ class reasonedExplorer:
         obstacleList = []
         print(direction)
         tracker[direction[0], direction[1]] = obstacleList
+        print(tracker[x, y])
 
         # print(direction)
         # if y > 0 or y < caveDim[1] - 1 or x > 0 or x < caveDim[0] - 1:
@@ -201,6 +202,7 @@ class reasonedExplorer:
             x = direction[0]
             y = direction[1]
             currentLocation = [x, y]
+            print(tracker, "LOOK")
             pickDirection = rea.decideNextMove(cave, currentLocation, tracker, arrows)
             return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
 
@@ -211,6 +213,8 @@ class reasonedExplorer:
         legalDirections = []
         x = currentLocation[0]
         y = currentLocation[1]
+        '''obstacleList = []
+        tracker[x, y] = obstacleList'''
         caveDim = np.shape(tracker)
         left = [x, y - 1]
         right = [x, y + 1]
@@ -235,38 +239,20 @@ class reasonedExplorer:
             legalDirections = up
         elif nextMove == "down":
             legalDirections = down
-        print(tracker[currentLocation])
+        print(tracker, "HERE")
         # print(legalDirections)
         print(currentLocation)
+
         if "Blocked" in tracker[legalDirections] or "Dead" in tracker[legalDirections]:
             legalList.remove(nextMove)
             nextMove = random.choice(legalList)
             # return nextMove
-        if "Stench" in tracker[currentLocation]:  # and "Breeze" not in tracker[currentLocation]
-            arrows = rea.shootWumpus(cave, currentLocation, nextMove, arrows)
+        if "Stench" in tracker[x, y]:  # and "Breeze" not in tracker[currentLocation]
+            print("this is happening just not working")
+            cave, arrows = rea.shootWumpus(cave, currentLocation, legalDirections, arrows)
             return nextMove
         else:
             return nextMove
-
-    # the legalMove function checks through the neighbors to see what exists and adds to
-    # legalList with what directions would work
-    @staticmethod
-    def legalMove(tracker, currentLocation):
-        legalList = []
-        x = currentLocation[0]
-        y = currentLocation[1]
-        caveDim = np.shape(tracker)
-        # adding list of possible coordinates
-        if y > 0:
-            legalList.append([x, y - 1])
-        if y < caveDim[1] - 1:
-            legalList.append([x, y + 1])
-        if x > 0:
-            legalList.append([x - 1, y])
-        if x < caveDim[0] - 1:
-            legalList.append([x + 1, y])
-
-        return legalList
 
     @staticmethod
     def shootWumpus(cave, currentLocation, direction, arrows):
@@ -308,4 +294,4 @@ class reasonedExplorer:
                     print("You hear your arrow hit a wall")
                     arrows -= 1
 
-            return arrows
+            return arrows, cave
