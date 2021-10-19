@@ -14,6 +14,11 @@ worlds = wumpusWorld
 problem = problemGenerator
 simple = simpleExplorer
 
+goldFound = 0
+killedByWumpus = 0
+killedByPit = 0
+unsolvedP = 0
+
 cprint(figlet_format('WUMPUS WORLD', font='letters'),
        'white', 'on_blue', attrs=['bold', 'blink'])
 
@@ -27,8 +32,18 @@ caves = worlds.worldGenerator()
 pits = input("Probability (0-.9) of generating a pit: ")
 whatsLeft = .9 - float(pits)
 wumpi = input("Probability (0-" + str(whatsLeft) + ") of generating a wumpi: ")
+whatsLeft = whatsLeft - float(wumpi)
+blocks = input("Probability (0-" + str(whatsLeft) + ") of generating an obstacle: ")
 
 # sends the caves and desired probabilities to generate the worlds appropriately
-caves = problem.generateWorld(caves, wumpi, pits)
+caves = problem.generateWorld(caves, wumpi, pits, blocks)
 
-simple.placeExplorer(caves[1])
+for i in range(10):
+       gold, wumpi, pit, unsolved, cells, wumpusKilled = simple.caveSelection(caves)
+
+print("Gold Found = " + str(gold))
+print("Unsolved caves = " + str(unsolved))
+print("Times killed by wumpus = " + str(wumpi))
+print("Times killed by a pit = " + str(pit))
+print("Number of Wumpi killed = " + str(wumpusKilled))
+print("Total cells explored = " + str(cells))
