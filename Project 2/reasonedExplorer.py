@@ -73,7 +73,7 @@ class reasonedExplorer:
                 return "Your journey ends here"
             else:
                 if y > 0:
-                    if pickDirection == "left":
+                    if pickDirection == left:
                         direction = left
                     if cave[x, y - 1] == 'W':
                         tracker[x, y].append("Stench")
@@ -90,7 +90,7 @@ class reasonedExplorer:
                 with suppress(IndexError):
 
                     if y < caveDim[1] - 1:
-                        if pickDirection == "right":
+                        if pickDirection == right:
                             direction = right
                         if cave[x, y + 1] == 'W':
                             tracker[x, y].append("Stench")
@@ -106,7 +106,7 @@ class reasonedExplorer:
                 # check top
                 with suppress(IndexError):
                     if x > 0:
-                        if pickDirection == "up":
+                        if pickDirection == up:
                             direction = up
                         if cave[x - 1, y] == 'W':
                             tracker[x, y].append("Stench")
@@ -121,7 +121,7 @@ class reasonedExplorer:
 
                 # check bottom
                 if x < caveDim[0] - 1:
-                    if pickDirection == "down":
+                    if pickDirection == down:
                         direction = down
                     if cave[x + 1, y] == 'W':
                         tracker[x, y].append("Stench")
@@ -135,8 +135,11 @@ class reasonedExplorer:
                         print("Whew.. nothing new below")
 
                 print(tracker)
+                if "Stench" in tracker[x, y]:  # and "Breeze" not in tracker[currentLocation]
+                    # print("this is happening just not working")
+                    cave, arrows = rea.shootWumpus(cave, currentLocation, direction, arrows)
 
-                print(pickDirection)
+                # print(pickDirection)
                 return rea.tryToEnter(cave, currentLocation, direction, tracker, arrows)
 
     @staticmethod
@@ -145,9 +148,8 @@ class reasonedExplorer:
         x = currentLocation[0]
         y = currentLocation[1]
         obstacleList = []
-        print(direction)
         tracker[direction[0], direction[1]] = obstacleList
-        print(tracker[x, y])
+        # print(tracker[x, y])
 
         # print(direction)
         # if y > 0 or y < caveDim[1] - 1 or x > 0 or x < caveDim[0] - 1:
@@ -202,7 +204,6 @@ class reasonedExplorer:
             x = direction[0]
             y = direction[1]
             currentLocation = [x, y]
-            print(tracker, "LOOK")
             pickDirection = rea.decideNextMove(cave, currentLocation, tracker, arrows)
             return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
 
@@ -213,13 +214,12 @@ class reasonedExplorer:
         legalDirections = []
         x = currentLocation[0]
         y = currentLocation[1]
-        '''obstacleList = []
-        tracker[x, y] = obstacleList'''
         caveDim = np.shape(tracker)
         left = [x, y - 1]
         right = [x, y + 1]
         up = [x - 1, y]
         down = [x + 1, y]
+
         # adding list of possible coordinates
         if y > 0:
             legalList.append("left")
@@ -239,20 +239,23 @@ class reasonedExplorer:
             legalDirections = up
         elif nextMove == "down":
             legalDirections = down
-        print(tracker, "HERE")
         # print(legalDirections)
-        print(currentLocation)
+        # print(currentLocation)
 
-        if "Blocked" in tracker[legalDirections] or "Dead" in tracker[legalDirections]:
+        '''if "Blocked" in tracker[legalDirections] or "Dead" in tracker[legalDirections]:
             legalList.remove(nextMove)
             nextMove = random.choice(legalList)
-            # return nextMove
-        if "Stench" in tracker[x, y]:  # and "Breeze" not in tracker[currentLocation]
+            # return nextMove'''
+
+        '''print(tracker[x], "HERE")
+        print(tracker[x,y])
+        print(tracker[y])'''
+        '''if "Stench" in tracker[x, y]:  # and "Breeze" not in tracker[currentLocation]
             print("this is happening just not working")
             cave, arrows = rea.shootWumpus(cave, currentLocation, legalDirections, arrows)
             return nextMove
-        else:
-            return nextMove
+        else:'''
+        return legalDirections
 
     @staticmethod
     def shootWumpus(cave, currentLocation, direction, arrows):
@@ -277,7 +280,6 @@ class reasonedExplorer:
                     print("You hear your arrow break")
                     arrows -= 1
                     break
-# elif cave[direction[0], direction[1]] == '' or cave[direction[0], direction[1]] == 'P' or cave[direction[0], direction[1]] == 'G':
                 else:
                     if x != direction[0]:
                         if direction[0] < x:
@@ -294,4 +296,4 @@ class reasonedExplorer:
                     print("You hear your arrow hit a wall")
                     arrows -= 1
 
-            return arrows, cave
+            return cave, arrows
