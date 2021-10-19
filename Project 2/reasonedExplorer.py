@@ -12,33 +12,42 @@ class reasonedExplorer:
     """
 
     @staticmethod
-    def placeExplorer(caves):
+    def placeExplorer(cave):
         rea = reasonedExplorer
-        caveDim = np.shape(caves)
+        caveDim = np.shape(cave)
         currentLocation = []
         count = 0
-        pickDirection = random.randint(1, 4)
         gold = False
         alive = True
 
         while count == 0:
             row = random.randint(1, caveDim[0] - 1)
             col = random.randint(1, caveDim[1] - 1)
-            if caves[row, col] == '':
-                caves[row, col] = 'E'
+            if cave[row, col] == '':
+                cave[row, col] = 'E'
                 currentLocation = [row, col]
                 count += 1
             else:
                 continue
 
+        # set the amount of arrows
+        wumpusCount = 0
+        for i in range(len(cave)):
+            for j in range(len(cave[0])):
+                if cave[i, j] == 'W':
+                    wumpusCount += 1
+        arrows = wumpusCount
 
         # initializing tracking cave
-        tracker = np.full_like(caves, 0, dtype=object)
+        tracker = np.full_like(cave, 0, dtype=object)
+        obstacleList = ["Safe"]
+        tracker[currentLocation[0], currentLocation[1]] = obstacleList
 
-        rea.track(caves, tracker, currentLocation, pickDirection, gold, alive)
+        pickDirection = rea.decideNextMove(cave, currentLocation, tracker, arrows)
+        rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
 
     @staticmethod
-    def track(cave, tracker, currentLocation, pickDirection, gold, alive):
+    def track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows):
         rea = reasonedExplorer
         # getting dimensions
         caveDim = np.shape(cave)
@@ -47,6 +56,10 @@ class reasonedExplorer:
         # iterating through neighboring cells to see what's possible
         x = currentLocation[0]
         y = currentLocation[1]
+        left = [x, y - 1]
+        right = [x, y + 1]
+        up = [x - 1, y]
+        down = [x + 1, y]
 
         # setting a list to hold
         obstacleList = ["Safe"]
@@ -57,11 +70,11 @@ class reasonedExplorer:
         while not gold:
             print(cave)
             if not alive:
-                return print("Your journey ends here")
+                return "Your journey ends here"
             else:
                 if y > 0:
-                    if pickDirection == 1:
-                        direction = [x, y - 1]
+                    if pickDirection == "left":
+                        direction = left
                     if cave[x, y - 1] == 'W':
                         tracker[x, y].append("Stench")
                         print("A stench to the left!")
@@ -77,8 +90,8 @@ class reasonedExplorer:
                 with suppress(IndexError):
 
                     if y < caveDim[1] - 1:
-                        if pickDirection == 2:
-                            direction = [x, y + 1]
+                        if pickDirection == "right":
+                            direction = right
                         if cave[x, y + 1] == 'W':
                             tracker[x, y].append("Stench")
                             print("A stench to the right!")
@@ -93,8 +106,8 @@ class reasonedExplorer:
                 # check top
                 with suppress(IndexError):
                     if x > 0:
-                        if pickDirection == 3:
-                            direction = [x - 1, y]
+                        if pickDirection == "up":
+                            direction = up
                         if cave[x - 1, y] == 'W':
                             tracker[x, y].append("Stench")
                             print("A stench above!")
@@ -108,8 +121,8 @@ class reasonedExplorer:
 
                 # check bottom
                 if x < caveDim[0] - 1:
-                    if pickDirection == 4:
-                        direction = [x + 1, y]
+                    if pickDirection == "down":
+                        direction = down
                     if cave[x + 1, y] == 'W':
                         tracker[x, y].append("Stench")
                         print("A stench below")
@@ -122,37 +135,33 @@ class reasonedExplorer:
                         print("Whew.. nothing new below")
 
                 print(tracker)
-                if "Stench" in tracker[x, y]:
-                    rea.shootWumpus(cave, currentLocation, direction)
 
-                return print(rea.tryToEnter(cave, currentLocation, direction, tracker))
-
-        return print("You found the gold at \n", cave)
-
+                print(pickDirection)
+                return rea.tryToEnter(cave, currentLocation, direction, tracker, arrows)
 
     @staticmethod
-    def tryToEnter(cave, currentLocation, direction, tracker):
-        pickDirection = random.randint(1, 4)
+    def tryToEnter(cave, currentLocation, direction, tracker, arrows):
         rea = reasonedExplorer
         x = currentLocation[0]
         y = currentLocation[1]
         obstacleList = []
-
+        print(direction)
+        tracker[direction[0], direction[1]] = obstacleList
 
         # print(direction)
         # if y > 0 or y < caveDim[1] - 1 or x > 0 or x < caveDim[0] - 1:
         if cave[direction[0], direction[1]] == 'W':
+            pickDirection = 0
             # if explorer dies put F for Fatality
-            tracker[direction[0], direction[1]] = obstacleList
             cave[x, y] = 'S'
             tracker[x, y].append("Safe")
             gold = False
             alive = False
             cave[direction[0], direction[1]] = 'F'
             print("You died from Wumpus")
-            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
         elif cave[direction[0], direction[1]] == 'P':
-            tracker[direction[0], direction[1]] = obstacleList
+            pickDirection = 0
             # if explorer dies put F for Fatality
             cave[x, y] = 'S'
             gold = False
@@ -160,29 +169,28 @@ class reasonedExplorer:
             tracker[x, y].append("Safe")
             cave[direction[0], direction[1]] = 'F'
             print("You died from a pit")
-            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
         elif cave[direction[0], direction[1]] == 'B':
-            tracker[direction[0], direction[1]] = obstacleList
             tracker[direction[0], direction[1]].append("Blocked")
             gold = False
             alive = True
             print("You cannot go that way")
-            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+            pickDirection = rea.decideNextMove(cave, currentLocation, tracker, arrows)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
         elif cave[direction[0], direction[1]] == 'G':
-            tracker[direction[0], direction[1]] = obstacleList
+            pickDirection = 0
             gold = True
             alive = True
-            print("You found the gold!")
-            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+            print("You found the gold at \n", [direction[0], direction[1]])
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
         elif cave[direction[0], direction[1]] == 'D':
-            tracker[direction[0], direction[1]] = obstacleList
             tracker[direction[0], direction[1]].append("Dead")
             gold = False
             alive = True
             print("There's a dead Wumpus here!")
-            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
+            pickDirection = rea.decideNextMove(cave, currentLocation, tracker, arrows)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
         else:
-            tracker[direction[0], direction[1]] = obstacleList
             cave[x, y] = 'S'
             if "Safe" not in tracker[x, y]:
                 tracker[x, y].append("Safe")
@@ -193,24 +201,80 @@ class reasonedExplorer:
             x = direction[0]
             y = direction[1]
             currentLocation = [x, y]
-            print(pickDirection)
-            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive)
-
-
+            pickDirection = rea.decideNextMove(cave, currentLocation, tracker, arrows)
+            return rea.track(cave, tracker, currentLocation, pickDirection, gold, alive, arrows)
 
     @staticmethod
-    def shootWumpus(cave, currentLocation, direction):
+    def decideNextMove(cave, currentLocation, tracker, arrows):
+        rea = reasonedExplorer
+        legalList = []
+        legalDirections = []
+        x = currentLocation[0]
+        y = currentLocation[1]
+        caveDim = np.shape(tracker)
+        left = [x, y - 1]
+        right = [x, y + 1]
+        up = [x - 1, y]
+        down = [x + 1, y]
+        # adding list of possible coordinates
+        if y > 0:
+            legalList.append("left")
+        if y < caveDim[1] - 1:
+            legalList.append("right")
+        if x > 0:
+            legalList.append("up")
+        if x < caveDim[0] - 1:
+            legalList.append("down")
+
+        nextMove = random.choice(legalList)
+        if nextMove == "left":
+            legalDirections = left
+        elif nextMove == "right":
+            legalDirections = right
+        elif nextMove == "up":
+            legalDirections = up
+        elif nextMove == "down":
+            legalDirections = down
+        print(tracker[currentLocation])
+        # print(legalDirections)
+        print(currentLocation)
+        if "Blocked" in tracker[legalDirections] or "Dead" in tracker[legalDirections]:
+            legalList.remove(nextMove)
+            nextMove = random.choice(legalList)
+            # return nextMove
+        if "Stench" in tracker[currentLocation]:  # and "Breeze" not in tracker[currentLocation]
+            arrows = rea.shootWumpus(cave, currentLocation, nextMove, arrows)
+            return nextMove
+        else:
+            return nextMove
+
+    # the legalMove function checks through the neighbors to see what exists and adds to
+    # legalList with what directions would work
+    @staticmethod
+    def legalMove(tracker, currentLocation):
+        legalList = []
+        x = currentLocation[0]
+        y = currentLocation[1]
+        caveDim = np.shape(tracker)
+        # adding list of possible coordinates
+        if y > 0:
+            legalList.append([x, y - 1])
+        if y < caveDim[1] - 1:
+            legalList.append([x, y + 1])
+        if x > 0:
+            legalList.append([x - 1, y])
+        if x < caveDim[0] - 1:
+            legalList.append([x + 1, y])
+
+        return legalList
+
+    @staticmethod
+    def shootWumpus(cave, currentLocation, direction, arrows):
         caveDim = np.shape(cave)
         x = currentLocation[0]
         y = currentLocation[1]
-
         # assigning arrows based on number of wumpi in cave
-        wumpusCount = 0
-        for i in range(len(cave)):
-            for j in range(len(cave[0])):
-                if cave[i, j] == 'W':
-                    wumpusCount += 1
-        arrows = wumpusCount
+        print("You have ", arrows, " arrows")
 
         if arrows == 0:
             print("You're out of arrows!")
@@ -221,14 +285,14 @@ class reasonedExplorer:
                     # change the wumpus into a dead wumpus
                     cave[direction[0], direction[1]] = 'D'
                     print("You heard a scream")
-                    print(cave)
                     arrows -= 1
                     break
-                elif cave[direction[0], direction[1]] != '':
+                elif cave[direction[0], direction[1]] == 'B':
                     print("You hear your arrow break")
                     arrows -= 1
                     break
-                elif cave[direction[0], direction[1]] == '':
+# elif cave[direction[0], direction[1]] == '' or cave[direction[0], direction[1]] == 'P' or cave[direction[0], direction[1]] == 'G':
+                else:
                     if x != direction[0]:
                         if direction[0] < x:
                             direction = [direction[0] - 1, direction[1]]
@@ -240,7 +304,8 @@ class reasonedExplorer:
                         else:
                             direction = [direction[0], direction[1] - 1]
 
-                else:
-                    print(cave)
+                if 0 > direction[1] > caveDim[1] - 1 and 0 > direction[0] > caveDim[0] - 1:
                     print("You hear your arrow hit a wall")
                     arrows -= 1
+
+            return arrows
